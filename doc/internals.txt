@@ -1,0 +1,67 @@
+Each packlad package consists of three parts:
+  - A compressed tar archive
+  - A 4-byte, big-endian magic number (0x686a6b6c, "hjkl" in ASCII)
+  - A 64-byte Ed25519 digital signature
+
+The package format does not contain metadata, because it's nothing but means of
+fast and secure file transfer.
+
+Instead, package metadata is represented in a "package entry", the most basic
+entity. Each package, available or installed, is represented by an entry. It's a
+text line in the following format:
+
+  packlad|1.0|A package manager|packlad-1.0.pkg|x86_64|libarchive curl zlib
+
+The line contains package metadata fields separated by "|":
+  - The package name
+  - The package version
+  - The package description
+  - The package path under the repository, relative to its root
+  - The package dependencies, separated by spaces
+
+This format was chosen because:
+  - It's textual, so the entry can be edited by hand
+  - Everything is stuffed in one line, so parsing is easy
+  - It's convenient for shell scripts
+
+A packlad repository contains packages and a package list, which is a text file
+that consists of multiple package entries that carry the package metadata:
+
+  zlib|1.2.8|A compression library|zlib-1.2.8.pkg|x86_64|
+  packlad|1.0|A package manager|packlad-1.0.pkg|x86_64|libarchive curl zlib
+  .
+  .
+  .
+
+When packlad updates the package list (-u), it reads the repository URL from the
+REPO environment variable and downloads the package list from $REPO/available to
+/var/packlad/available.
+
+Then, when it installs a package, it locates the requested package and its
+dependencies in the package list, recursively. Once all packages are found,
+they are downloaded from the repository to /var/packlad/downloaded, using the
+the relative path specified in their entries.
+
+Once a package is downloaded, packlad verifies its digital signature using
+/etc/packlad/pub_key, extracts it and puts two files under
+/var/packlad/installed/$name:
+  - "files", which contains the list of files installed by the package
+  - "entry", which contains the package entry with an extra field that specifies
+    who initiated the package installation. Its value must be one of:
+      - "user": the user installed the package
+      - "core": the package is a core package
+      - "dependency": the package was pulled in by another package
+
+    packlad performs automatic removal of unneeded packages and this field
+    specifies whether the new package can be removed and how:
+      - "core" packages cannot be removed
+      - "user" are never removed automatically, but can be removed by the user
+      - "dependency" are removed automatically, but cannot be removed by the
+        user
+
+    Also, a "user" package which is a dependency of another package cannot be
+    removed.
+
+When a package is removed, all files under the file list are deleted,
+/var/packlad/installed/$name is removed and all unneeded dependencies are
+removed automatically.

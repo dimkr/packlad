@@ -1,0 +1,37 @@
+#!/bin/sh
+
+if [ 4 -ne $# ]
+then
+	echo "Usage: $0 DIR PRIVATE PUBLIC OUTPUT" 1>&2
+	exit 1
+fi
+
+comp="$(which lzip)"
+if [ -n "$comp" ]
+then
+	comp="$comp -9"
+else
+	comp="$(which clzip)"
+	if [ -n "$comp" ]
+	then
+		comp="$comp -9"
+	else
+		comp="$(which xz)"
+		if [ -n "$comp" ]
+		then
+			comp="$comp -9 -e"
+		else
+			echo "Warning: cannot find lzip, clzip or xz; falling back to " \
+                 "gzip compression." 1>&2
+			comp="gzip -9"
+		fi
+	fi
+fi
+
+# create a compressed tar archive from the directory contents
+tar="$(mktemp -u)"
+tar -C "$1" -c . | $comp > "$tar"
+
+# convert the archive to a package
+tar2pkg "$tar" "$2" "$3" "$4"
+rm -f "$tar"

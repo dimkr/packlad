@@ -1,0 +1,53 @@
+.TH packlad 8
+.SH NAME
+.B packlad
+\- a package manager
+.SH SYNOPSIS
+.B packlad
+[-d] [-u] [-s] [-n] [-p PREFIX] [-u URL] -l|-q|-c|-f|-i|-r PACKAGE
+.SH DESCRIPTION
+Installs or removes a package.
+.TP
+.B -u
+Fetch the list of available packages.
+.TP
+.B -r
+Remove the specified package.
+.TP
+.B -i
+Fetch and install the specified package.
+.TP
+.B -n
+Mark the installed package as non-removable.
+.TP
+.B -q
+Query the list of installed packages.
+.TP
+.B -c
+List installed packages which can be removed.
+.TP
+.B -u
+Use a given package repository, instead of the default.
+.TP
+.B -l
+List available packages.
+.TP
+.B -f
+List the files installed by a package.
+.TP
+.B -d
+Show extensive debugging information.
+.TP
+.B -p
+Instead of operating on the file system root, operate on a prefix.
+.TP
+.B -s
+Skip the verification of digital signatures.
+.SH "ENVIRONMENT VARIABLES"
+.TP
+.B REPO
+The package repository URL.
+.SH "SEE ALSO"
+.B dir2pkg(1)
+.SH AUTHOR
+Dima Krasner (dima@dimakrasner.com)

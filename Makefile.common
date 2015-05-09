@@ -1,0 +1,40 @@
+CC ?= cc
+CFLAGS ?= -O2 -pipe
+LDFLAGS ?= -s
+PKG_CONFIG ?= pkg-config
+VAR_DIR ?= /var/packlad
+CONF_DIR ?= /etc/packlad
+
+PKG_ARCHIVE_DIR = .$(VAR_DIR)/downloaded
+PKG_LIST_FILE_NAME = available
+PKG_LIST_PATH = .$(VAR_DIR)/$(PKG_LIST_FILE_NAME)
+INST_DATA_DIR = .$(VAR_DIR)/installed
+LOCK_FILE_PATH = .$(VAR_DIR)/lock
+PUB_KEY_PATH = .$(CONF_DIR)/pub_key
+LOCK_FILE_PATH = .$(VAR_DIR)/lock
+
+CURL_CFLAGS = $(shell $(PKG_CONFIG) --cflags libcurl)
+CURL_LIBS = $(shell $(PKG_CONFIG) --libs libcurl)
+
+LIBARCHIVE_CFLAGS = $(shell $(PKG_CONFIG) --cflags libarchive)
+LIBARCHIVE_LIBS = $(shell $(PKG_CONFIG) --libs libarchive)
+
+ZLIB_CFLAGS = $(shell $(PKG_CONFIG) --cflags zlib)
+ZLIB_LIBS = $(shell $(PKG_CONFIG) --libs zlib)
+
+SRCS = $(wildcard *.c)
+OBJS = $(SRCS:.c=.o)
+
+CFLAGS += -std=gnu99 \
+          -Wall \
+          -pedantic \
+          -DCONF_DIR=\"$(CONF_DIR)\" \
+          -DPKG_ARCHIVE_DIR=\"$(PKG_ARCHIVE_DIR)\" \
+          -DPKG_LIST_FILE_NAME=\"$(PKG_LIST_FILE_NAME)\" \
+          -DPKG_LIST_PATH=\"$(PKG_LIST_PATH)\" \
+          -DINST_DATA_DIR=\"$(INST_DATA_DIR)\" \
+          -DLOCK_FILE_PATH=\"$(LOCK_FILE_PATH)\" \
+          -DPUB_KEY_PATH=\"$(PUB_KEY_PATH)\" \
+          -DLOCK_FILE_PATH=\"$(LOCK_FILE_PATH)\"
+
+LDFLAGS += -L../logic -L../core

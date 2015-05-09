@@ -1,24 +1,31 @@
-                  _    _ _
- _ __   __ _  ___| | _| (_)_ __ ___
-| '_ \ / _` |/ __| |/ / | | '_ ` _ \
-| |_) | (_| | (__|   <| | | | | | | |
-| .__/ \__,_|\___|_|\_\_|_|_| |_| |_|
+                  _    _           _
+ _ __   __ _  ___| | _| | __ _  __| |
+| '_ \ / _` |/ __| |/ / |/ _` |/ _` |
+| |_) | (_| | (__|   <| | (_| | (_| |
+| .__/ \__,_|\___|_|\_\_|\__,_|\__,_|
 |_|
 
 Overview
 ========
 
-packlim is a lightweight, permissively-licensed package manager for Linux
+packlad is a lightweight, permissively-licensed package manager for Linux
 (https://www.kernel.org/) distributions.
 
-packlim's performance-critical parts are written in C and the rest (mostly
-logic) in written in Tcl, using Jim (http://jim.tcl.tk/). Native code provides
-speed, while exceptions and garbage collection improve error handling and
-resource efficiency. Also, the use of a scripting language greatly reduces the
-amount of code.
+It tries to combine:
+  - The speed and robustness of pacman (https://www.archlinux.org/pacman/)
+  - Digitally-signed packages, as with major package managers, but without bloat
+  - Easy creation of repositories, as with createrepo
+    (http://createrepo.baseurl.org/) and PPM (http://bkhome.org/woof/ppm.htm)
+  - The "autoremove" feature of Apt (https://wiki.debian.org/Apt)
+  - The ability to extract PPM's (http://bkhome.org/woof/ppm.htm) PET packages
+    on any distribution (using standard command-line tools), despite of their
+    custom format
 
-packlim is the successor to packlad (https://github.com/dimkr/packlad), which
-tries to achieve the same goals using C code alone.
+packlad is the successor to packdude (https://github.com/dimkr/packdude). It's
+simpler, since it uses old-fashioned text files instead of SQLite
+(https://sqlite.org/) databases.
+
+In addition, it's more secure, since it supports digitally-signed packages.
 
 Features
 ========
@@ -27,31 +34,12 @@ Features
   - Package removal, with automatic cleanup of unneeded packages
   - Support for digitally-signed packages, with quick verification
   - Support for multiple compression algorithms
-  - Support for installing packages to a prefix other than /
-  - A scripting interface
 
-Scripting Interface
-===================
-
-packlim allows complex package management tasks, using an object-oriented Tcl
-API.
-
-For example:
-  1) To connect to a repository, create a new repository object:
-    set repo [packlim.repository http://repository]
-
-  2) To remove a package, call packlim.remove:
-    packlim.remove ca-certificates /tmp
-
-packlim uses all API internally as well; see packlim's implementation for more
-usage examples.
-
-Missing Features
+Lacking Features
 ================
 
-  - Support for multiple repositories - packlim is designed for small
-    distributions with one repository per architecture,
-  - Support for multiple architectures in one repository
+  - Support for multiple repositories - packlad is designed for small
+    distributions with one repository per architecture
 
 Dependencies
 ============
@@ -61,14 +49,103 @@ Dependencies
     - XZ (http://tukaani.org/xz/)
     - gzip (https://www.gnu.org/software/gzip/)
   - libcurl (http://curl.haxx.se/)
+  - zlib (http://www.zlib.net/)
   - Ed25519 (https://github.com/orlp/ed25519)
-  - Jim (http://jim.tcl.tk/)
+
+Building
+========
+
+To generate a key pair:
+  make genkeys
+
+To build packlad:
+  make
+
+To create packages, use dir2pkg with the keys under keys/.
+
+Usage
+=====
+
+  - Build packlad.
+  - To create packages, place their files in directories and run dir2pkg for
+    each. The keys you should use are the ones under keys/.
+  - Then, create a package list with lines in the following format:
+
+      packlad|1.0|A package manager|packlad-1.0.pkg|x86_64|libarchive curl zlib
+
+    If you don't understand how to create this package list, see
+    doc/internals.txt.
+  - Upload the packages and the package list to a server (which speaks any
+    protocol supported by libcurl). Make sure the package list is named
+    "available".
+  - Distribute packlad to the end-user, with the repository URL under the "REPO"
+    environment variable. Make sure you keep the private key to yourself.
+
+Directory Structure
+===================
+
+  - "doc" contains documentation
+  - "compat" contains compatibility and portability code
+  - "keys" contains packlad's private and public keys and a key generator
+  - "pkgsign" contains a package signing tool
+  - "dir2pkg" contains a script that generates a signed package from a directory
+  - "core" contains packlad's core: low-level package manager building blocks
+  - "logic" contains packlad's high-level, complex operations, built on top of
+    multiple modules of the core
+  - "packlad" contains packlad itself, a command-line tool that wraps all logic
+
+FAQ
+===
+
+  'packlad'? Are you serious?
+  ----------------------------
+
+  Yes. It's like pacman (https://www.archlinux.org/pacman/) and packdude
+  (https://github.com/dimkr/packdude), but smaller and younger.
+
+  Why write another package manager?
+  ----------------------------------
+
+  packlad was written for RLSD (http://rlsd.dimakrasner.com/), because it needs
+  a small package manager that is easy to work with, secure, lightweight and
+  straight-forward, without unneeded questions.
+
+  How does packlad work?
+  ----------------------
+
+  See doc/internals.txt.
+
+  What's so bad about packdude?
+  -----------------------------
+
+  - It's complicated. I mean, the code.
+  - Databases are binary and cannot be edited by hand.
+  - packdude's repositories contain a database. This database is created using
+    a tool that converts a CSV file to a SQLite database. Keeping the
+    human-readable CSV file in sync with the database is simply annoying and
+    error-prone.
+  - It doesn't support signed packages.
+  - It doesn't allow the user when to update the package database.
+  - It supports only XZ compression.
+  - It doesn't play nicely with luufs (https://github.com/dimkr/luufs), since
+    all the package data is contained in one file.
+  - Its dependency resolution is inefficient.
+
+  What was good about packdude?
+  ---------------------------
+
+  - It was small and fast. Package installation was quick.
+  - The automatic cleanup feature worked amazingly well.
+  - Its package format was great. tar and XZ Utils handle archiving and
+    compression pretty well, so using existing technologiesw was a good choice.
+    Also, the package header was located after a XZ-compressed tar archive, so
+    it was possible to extract packdude's packages with xz and tar. That was
+    pretty convenient. This is definitely a keeper.
 
 Credits and Legal Information
 =============================
 
-packlim is free and unencumbered software released under the terms of the MIT
-license; see COPYING for the license text. For a list of its authors and
-contributors, see AUTHORS.
+packlad is licensed under a 2-clause BSD license, see COPYING for the license
+text. For a list of its authors and contributors, see AUTHORS.
 
 The ASCII art logo at the top was made using FIGlet (http://www.figlet.org/).
